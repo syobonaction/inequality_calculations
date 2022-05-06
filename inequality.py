@@ -1,11 +1,29 @@
 import math
 import pandas as pd
 
+dataset_filename = 'WID_data_PH.csv'
+
 class PopulationSubset:
     def __init__(self, pct_population, pct_income, pct_richer):
         self.pct_population = pct_population
         self.pct_income = pct_income
         self.pct_richer = pct_richer
+
+def get_income_data(year):
+    income_data = []
+    df = pd.read_csv(
+        dataset_filename, 
+        index_col=None,
+        sep=";",
+        usecols=[1,2,3,4],
+    )
+    subset = df.loc[(df["year"] == year) & (df["variable"]=="tptinc992j")]
+    for n in range(0, len(subset)):
+        percentile = "p" + str(n) + "p100"
+        record = subset["value"].loc[subset["percentile"]==percentile].values.tolist()
+        if(record):
+            income_data.append(record[0])
+    return income_data
 
 def get_population_characteristics(arr):
     population_arr = []
@@ -18,13 +36,8 @@ def get_population_characteristics(arr):
     return population_arr
     
 def display_population_characteristics(data_set):
-    population_arr = get_population_characteristics(data_set.income_arr)
     print("Inequality data for", data_set.country, "for the year", data_set.year)
     print("---------------------------------------------")
-    print("Dividing the population into ", len(data_set.income_arr), " percentiles:")
-    for i, n in enumerate(population_arr):
-        print("Percentile", i+1, "owns", round(n.pct_income*100,2), "percent of total income")
-    print("--Measurements--")
     print("The log variance of this distribution is:", round(data_set.income_log_variance,2))
     print("The relative mean deviation is:", round(data_set.income_mean_deviation,2))
     print("The related gini coefficient is:", round(data_set.gini,1))
@@ -36,7 +49,6 @@ def export_population_characteristics(data_set):
     population_arr = get_population_characteristics(data_set.income_arr)
     pct_pop_arr = []
     pct_income_arr = []
-    header = ("Inequality data for the", data_set.country, "for the year", data_set.year)
     for i, n in enumerate(population_arr):
         idx = i+1
         ordinal = "th"
@@ -57,7 +69,10 @@ def get_log_variance(arr):
     mean = get_mean(arr)
     log_arr = []
     for n in arr:
-        log_arr.append(math.pow(math.log(n/mean), 2))
+        if n == 0:
+            log_arr.append(0)
+        else:
+            log_arr.append(math.pow(math.log(n/mean), 2))
     return sum(log_arr)/len(arr)
     
 def get_relative_mean_deviation(arr):
@@ -78,14 +93,16 @@ def get_theil_t(arr):
     mean = get_mean(arr)
     theil = 0
     for n in arr:
-        theil += (n/mean)*math.log(n/mean)
+        if n > 0:
+            theil += (n/mean)*math.log(n/mean)
     return (theil/len(arr))*100
    
 def get_theil_l(arr):
     mean = get_mean(arr)
     theil = 0
     for n in arr:
-        theil += math.log(mean/n)
+        if n > 0:
+            theil += math.log(mean/n)
     return (theil/len(arr))*100
 
 class DataSet:
@@ -102,17 +119,19 @@ class DataSet:
 pp2000 = DataSet(
     "The Philippines", 
     2000, 
-    [1135.707949, 1892.846582, 2828.135482, 4453.756665, 11958.33664]
+    get_income_data(2000)
 )
+
 pp2015 = DataSet(
     "The Philippines", 
     2015, 
-    [4088.076278, 6716.125314, 9782.182522, 15111.28196, 37230.69467]
+    get_income_data(2015)
 )
+
 pp2018 = DataSet(
     "The Philippines", 
     2018, 
-    [2640.00233, 4215.487592, 5961.295584, 8814.201328, 20949.69591]
+    get_income_data(2018)
 )
 
 display_population_characteristics(pp2000)
