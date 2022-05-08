@@ -15,7 +15,7 @@ questions = [
         "type": "list",
         "name": "year",
         "message": "Please select a year:",
-        "choices": ["2000", "2009", "2012", "2015", "2018"],
+        "choices": ["2000","2003", "2006", "2009", "2012", "2015", "2018"],
     },
     {
         "type": "list",
@@ -32,22 +32,23 @@ class PopulationSubset:
         self.pct_income = pct_income
         self.pct_richer = pct_richer
 
-def get_income_data(year):
-    year = int(year)
-    income_data = []
+def get_data(inquiry):
+    year = int(inquiry["year"])
+    measurement = "thweal992j" if inquiry["measurement"]=="Wealth" else "tptinc992j"
+    data = []
     df = pd.read_csv(
         dataset_filename, 
         index_col=None,
         sep=";",
         usecols=[1,2,3,4],
     )
-    subset = df.loc[(df["year"] == year) & (df["variable"]=="tptinc992j")]
+    subset = df.loc[(df["year"] == year) & (df["variable"]==measurement)]
     for n in range(0, len(subset)):
         percentile = "p" + str(n) + "p100"
         record = subset["value"].loc[subset["percentile"]==percentile].values.tolist()
         if(record):
-            income_data.append(record[0])
-    return income_data
+            data.append(record[0])
+    return data
 
 def get_population_characteristics(arr):
     population_arr = []
@@ -79,7 +80,7 @@ def export_population_characteristics(data_set):
         if idx == 1:
             ordinal = "st"
         pct_pop_arr.append(str(idx) + str(ordinal))
-        pct_income_arr.append(n.pct_income*100)
+        pct_income_arr.append(round(n.pct_income*100, 2))
     data = pd.DataFrame({
         "Population Percentile": pct_pop_arr,
         "Income Share": pct_income_arr
@@ -93,6 +94,7 @@ def get_log_variance(arr):
     mean = get_mean(arr)
     log_arr = []
     for n in arr:
+        n = abs(n)
         if n == 0:
             log_arr.append(0)
         else:
@@ -143,7 +145,7 @@ class DataSet:
 data_set = DataSet(
     result["country"],
     result["year"],
-    get_income_data(result["year"])
+    get_data(result)
 )
 
 display_population_characteristics(data_set)
