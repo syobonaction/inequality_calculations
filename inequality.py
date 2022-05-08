@@ -1,7 +1,30 @@
 import math
 import pandas as pd
+from InquirerPy import prompt
 
-dataset_filename = 'WID_data_PH.csv'
+dataset_filename = "WID_data_PH.csv"
+
+questions = [
+    {
+        "type": "list",
+        "name": "country",
+        "message": "Which country would you like to analyze?",
+        "choices": ["The Philippines"],
+    },
+    {
+        "type": "list",
+        "name": "year",
+        "message": "Please select a year:",
+        "choices": ["2000", "2009", "2012", "2015", "2018"],
+    },
+    {
+        "type": "list",
+        "name": "measurement",
+        "message": "Please select an inequality measurement:",
+        "choices": ["Income", "Wealth"],
+    },
+]
+result = prompt(questions)
 
 class PopulationSubset:
     def __init__(self, pct_population, pct_income, pct_richer):
@@ -10,6 +33,7 @@ class PopulationSubset:
         self.pct_richer = pct_richer
 
 def get_income_data(year):
+    year = int(year)
     income_data = []
     df = pd.read_csv(
         dataset_filename, 
@@ -55,7 +79,7 @@ def export_population_characteristics(data_set):
         if idx == 1:
             ordinal = "st"
         pct_pop_arr.append(str(idx) + str(ordinal))
-        pct_income_arr.append(round(n.pct_income*100, 2))
+        pct_income_arr.append(n.pct_income*100)
     data = pd.DataFrame({
         "Population Percentile": pct_pop_arr,
         "Income Share": pct_income_arr
@@ -116,25 +140,23 @@ class DataSet:
         self.theil_t = get_theil_t(income_arr)
         self.theil_l = get_theil_l(income_arr)
 
-pp2000 = DataSet(
-    "The Philippines", 
-    2000, 
-    get_income_data(2000)
+data_set = DataSet(
+    result["country"],
+    result["year"],
+    get_income_data(result["year"])
 )
 
-pp2015 = DataSet(
-    "The Philippines", 
-    2015, 
-    get_income_data(2015)
-)
+display_population_characteristics(data_set)
 
-pp2018 = DataSet(
-    "The Philippines", 
-    2018, 
-    get_income_data(2018)
-)
+questions = [
+    {
+        "type": "confirm",
+        "name": "answer",
+        "message": "Would you like to export the results?",
+    },
+]
+result = prompt(questions)
 
-display_population_characteristics(pp2000)
-display_population_characteristics(pp2015)
-display_population_characteristics(pp2018)
-# export_population_characteristics(pp2000)
+if(result["answer"]):
+    export_population_characteristics(data_set)
+    print("Results exported as inequality_data.xslx")
